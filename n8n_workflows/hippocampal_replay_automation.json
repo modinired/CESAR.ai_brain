@@ -1,0 +1,118 @@
+{
+  "name": "CESAR Hippocampal Replay (Nightly Memory Consolidation)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 24
+            }
+          ]
+        }
+      },
+      "name": "Schedule Trigger (2 AM Daily)",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "command": "cd /Users/modini_red/CESAR.ai_Terry.Dells\\ (Deploy)/cesar_ecosystem && python3 services/hippocampal_replay_service.py",
+        "cwd": "/Users/modini_red/CESAR.ai_Terry.Dells (Deploy)/cesar_ecosystem"
+      },
+      "name": "Run Hippocampal Replay",
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:8000/api/v1/agents/notify",
+        "method": "POST",
+        "jsonParameters": true,
+        "bodyParametersJson": "={\n  \"event\": \"hippocampal_replay_complete\",\n  \"timestamp\": \"{{ $now.toISO() }}\",\n  \"data\": {{ $json }}\n}"
+      },
+      "name": "Notify Agent Network",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "cesar_src",
+        "user": "postgres",
+        "password": "={{ $env.POSTGRES_PASSWORD }}",
+        "query": "INSERT INTO memory_consolidations (consolidation_type, memories_processed, status, metadata) VALUES ('hippocampal_replay', $1, 'completed', $2)",
+        "queryParameters": "={{ $json.memories_processed }}, {{ $json }}"
+      },
+      "name": "Log to Database",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "channel": "#cesar-ai-notifications",
+        "text": "🧠 Nightly Memory Consolidation Complete\n\n📊 Memories Processed: {{ $json.memories_processed }}\n🔄 Training Pairs Generated: {{ $json.training_pairs_generated }}\n📁 Output Files:\n{{ $json.output_files.qwen2_5_coder }}\n{{ $json.output_files.llama_3 }}\n\n✅ Qwen2.5 Coder & Llama 3 datasets ready for fine-tuning"
+      },
+      "name": "Slack Notification (Optional)",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 1,
+      "position": [1050, 300],
+      "disabled": true
+    }
+  ],
+  "connections": {
+    "Schedule Trigger (2 AM Daily)": {
+      "main": [
+        [
+          {
+            "node": "Run Hippocampal Replay",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Run Hippocampal Replay": {
+      "main": [
+        [
+          {
+            "node": "Notify Agent Network",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Notify Agent Network": {
+      "main": [
+        [
+          {
+            "node": "Log to Database",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Database": {
+      "main": [
+        [
+          {
+            "node": "Slack Notification (Optional)",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {},
+  "id": "hippocampal-replay-automation"
+}

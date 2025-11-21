@@ -1,0 +1,76 @@
+[
+  {
+    "instruction": "Explain the concept: CESAR Orchestrator",
+    "input": "",
+    "output": "Central orchestration agent managing 48 specialized agents across 11 MCP systems",
+    "metadata": {
+      "source": "brain_knowledge",
+      "type": "wisdom",
+      "mass": 50.0,
+      "z_index": 350
+    }
+  },
+  {
+    "instruction": "Explain the concept: Local-Cloud LLM Hybrid System",
+    "input": "",
+    "output": "Cost-optimized LLM routing: Qwen2.5 local, GPT-4 cloud with quality scoring",
+    "metadata": {
+      "source": "brain_knowledge",
+      "type": "wisdom",
+      "mass": 45.0,
+      "z_index": 320
+    }
+  },
+  {
+    "instruction": "Explain the concept: Agent-to-Agent Communication Protocol",
+    "input": "",
+    "output": "Standardized message passing system enabling collaborative problem solving",
+    "metadata": {
+      "source": "brain_knowledge",
+      "type": "knowledge",
+      "mass": 40.0,
+      "z_index": 250
+    }
+  },
+  {
+    "instruction": "Explain the concept: CockroachDB Cloud Integration",
+    "input": "",
+    "output": "Distributed SQL database providing multi-region resilience for agent memory",
+    "metadata": {
+      "source": "brain_knowledge",
+      "type": "knowledge",
+      "mass": 35.0,
+      "z_index": 250
+    }
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "input": "",
+    "output": "Revenue shows 15% growth...",
+    "metadata": {
+      "source": "llm_collaboration",
+      "quality_score": 0.92,
+      "agent_id": "finpsy_001"
+    }
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "input": "",
+    "output": "Revenue shows 15% growth...",
+    "metadata": {
+      "source": "llm_collaboration",
+      "quality_score": 0.92,
+      "agent_id": "finpsy_001"
+    }
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "input": "",
+    "output": "Revenue shows 15% growth...",
+    "metadata": {
+      "source": "llm_collaboration",
+      "quality_score": 0.92,
+      "agent_id": "finpsy_001"
+    }
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "total_samples": 7,
+  "timestamp": "20251121_022802",
+  "source_breakdown": {
+    "brain_knowledge": 4,
+    "llm_collaboration": 3
+  },
+  "quality_metrics": {
+    "high_quality_samples": 3,
+    "knowledge_samples": 4
+  }
+}

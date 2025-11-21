@@ -1,0 +1,23 @@
+[
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "output": "Strong Q4 performance driven by...",
+    "quality_score": 0.92,
+    "agent_id": "finpsy_001",
+    "timestamp": "2025-11-21T07:16:48.907841+00:00"
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "output": "Strong Q4 performance driven by...",
+    "quality_score": 0.92,
+    "agent_id": "finpsy_001",
+    "timestamp": "2025-11-21T07:16:18.932718+00:00"
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "output": "Strong Q4 performance driven by...",
+    "quality_score": 0.92,
+    "agent_id": "finpsy_001",
+    "timestamp": "2025-11-21T07:15:54.421676+00:00"
+  }
+]

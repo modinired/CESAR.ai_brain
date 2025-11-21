@@ -1,0 +1,101 @@
+{
+  "timestamp": "2025-11-21T02:08:05.389842",
+  "summary": {
+    "total": 15,
+    "passed": 0,
+    "failed": 14,
+    "skipped": 1
+  },
+  "results": [
+    {
+      "test": "Database Connectivity",
+      "status": "FAIL",
+      "details": "connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\nMultiple connection attempts failed. All failures were:\n- host: 'localhost', port: 5432, hostaddr: '::1': connection failed: connection to server at \"::1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\n- host: 'localhost', port: 5432, hostaddr: '127.0.0.1': connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist",
+      "duration_ms": 34.809112548828125
+    },
+    {
+      "test": "Database Schema",
+      "status": "FAIL",
+      "details": "connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\nMultiple connection attempts failed. All failures were:\n- host: 'localhost', port: 5432, hostaddr: '::1': connection failed: connection to server at \"::1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\n- host: 'localhost', port: 5432, hostaddr: '127.0.0.1': connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist",
+      "duration_ms": 6.1779022216796875
+    },
+    {
+      "test": "Agent Registry Count",
+      "status": "FAIL",
+      "details": "connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\nMultiple connection attempts failed. All failures were:\n- host: 'localhost', port: 5432, hostaddr: '::1': connection failed: connection to server at \"::1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\n- host: 'localhost', port: 5432, hostaddr: '127.0.0.1': connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist",
+      "duration_ms": 8.133888244628906
+    },
+    {
+      "test": "LLM Registry",
+      "status": "FAIL",
+      "details": "connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\nMultiple connection attempts failed. All failures were:\n- host: 'localhost', port: 5432, hostaddr: '::1': connection failed: connection to server at \"::1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist\n- host: 'localhost', port: 5432, hostaddr: '127.0.0.1': connection failed: connection to server at \"127.0.0.1\", port 5432 failed: FATAL:  role \"mcp_user\" does not exist",
+      "duration_ms": 5.008220672607422
+    },
+    {
+      "test": "API Health",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5176.208257675171
+    },
+    {
+      "test": "API Agents Endpoint",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 10030.285120010376
+    },
+    {
+      "test": "API Workflows Endpoint",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 10028.17702293396
+    },
+    {
+      "test": "WebSocket Stats",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5027.758836746216
+    },
+    {
+      "test": "WebSocket Publish",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5029.018878936768
+    },
+    {
+      "test": "Workflow Trigger",
+      "status": "SKIP",
+      "details": "Skipped (expected in test environment): ReadTimeout",
+      "duration_ms": 30047.68204689026
+    },
+    {
+      "test": "Response Time /health",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5043.5521602630615
+    },
+    {
+      "test": "Response Time /api/agents",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5089.9951457977295
+    },
+    {
+      "test": "Response Time /api/workflows",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5027.000665664673
+    },
+    {
+      "test": "Response Time /api/stats/overview",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5036.93699836731
+    },
+    {
+      "test": "Event Persistence",
+      "status": "FAIL",
+      "details": "",
+      "duration_ms": 5065.192937850952
+    }
+  ]
+}

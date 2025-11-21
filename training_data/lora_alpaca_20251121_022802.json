@@ -1,0 +1,37 @@
+[
+  {
+    "instruction": "Explain the concept: CESAR Orchestrator",
+    "input": "",
+    "output": "Central orchestration agent managing 48 specialized agents across 11 MCP systems"
+  },
+  {
+    "instruction": "Explain the concept: Local-Cloud LLM Hybrid System",
+    "input": "",
+    "output": "Cost-optimized LLM routing: Qwen2.5 local, GPT-4 cloud with quality scoring"
+  },
+  {
+    "instruction": "Explain the concept: Agent-to-Agent Communication Protocol",
+    "input": "",
+    "output": "Standardized message passing system enabling collaborative problem solving"
+  },
+  {
+    "instruction": "Explain the concept: CockroachDB Cloud Integration",
+    "input": "",
+    "output": "Distributed SQL database providing multi-region resilience for agent memory"
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "input": "",
+    "output": "Revenue shows 15% growth..."
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "input": "",
+    "output": "Revenue shows 15% growth..."
+  },
+  {
+    "instruction": "Analyze Q4 revenue trends for AAPL",
+    "input": "",
+    "output": "Revenue shows 15% growth..."
+  }
+]

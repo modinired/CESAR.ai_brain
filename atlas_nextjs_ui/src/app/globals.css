@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background-start-rgb: 13, 24, 41; /* Deep Navy */
+    --background-end-rgb: 13, 24, 41;
+    --foreground: 220 16% 96%; /* Light Gray for text */
+    
+    /* Glass card styles */
+    --card-background: rgba(255, 255, 255, 0.05);
+    --card-border: rgba(255, 255, 255, 0.2);
+    --card-foreground: 220 16% 96%;
+
+    --popover: 220 44% 11%;
+    --popover-foreground: 220 16% 96%;
+    
+    /* Primary action color - Bright Blue */
+    --primary: 204 100% 50%; /* #0077FF */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 44% 21%;
+    --secondary-foreground: 220 16% 96%;
+    
+    --muted: 220 44% 21%;
+    --muted-foreground: 220 9% 65%; /* Cool Gray adjusted for dark bg */
+    
+    --accent: 220 44% 21%;
+    --accent-foreground: 220 16% 96%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: hsl(var(--card-border));
+    --input: 220 44% 21%;
+    --ring: 204 100% 50%;
+    
+    --radius: 0.5rem;
+
+    /* Chart Colors */
+    --chart-1: 199 100% 50%;
+    --chart-2: 140 79% 45%;
+    --chart-3: 270 88% 66%;
+    --chart-4: 30 94% 50%;
+    --chart-5: 27 87% 67%;
+
+    /* Sidebar specific colors */
+    --sidebar-background: 13 24 41; /* Deep Navy */
+    --sidebar-foreground: 220 16% 96%;
+    --sidebar-primary: 204 100% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 44% 21%;
+    --sidebar-accent-foreground: 220 16% 96%;
+    --sidebar-border: 220 44% 21%;
+    --sidebar-ring: 204 100% 50%;
+  }
+
+  .dark {
+    /* Keeping dark theme consistent for now, can be customized later */
+    --background-start-rgb: 13, 24, 41;
+    --background-end-rgb: 13, 24, 41;
+    --foreground: 220 16% 96%;
+    --card-background: rgba(255, 255, 255, 0.05);
+    --card-border: rgba(255, 255, 255, 0.2);
+    --card-foreground: 220 16% 96%;
+    --popover: 220 44% 11%;
+    --popover-foreground: 220 16% 96%;
+    --primary: 204 100% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 44% 21%;
+    --secondary-foreground: 220 16% 96%;
+    --muted: 220 44% 21%;
+    --muted-foreground: 220 9% 65%;
+    --accent: 220 44% 21%;
+    --accent-foreground: 220 16% 96%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: hsl(var(--card-border));
+    --input: 220 44% 21%;
+    --ring: 204 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@layer components {
+  .text-charcoal {
+    color: hsl(220 20% 96%); /* Was #1F2937, now light for dark bg */
+  }
+  .text-cool-gray {
+    color: hsl(220 9% 65%); /* Was #6B7280 */
+  }
+  .bg-deep-mesh-gradient {
+    background: radial-gradient(ellipse 80% 80% at 50% -20%, rgba(120, 119, 198, 0.3), transparent),
+                radial-gradient(ellipse 80% 80% at 20% 120%, rgba(0, 198, 255, 0.3), transparent),
+                radial-gradient(ellipse 80% 80% at 80% 120%, rgba(0, 114, 255, 0.3), transparent),
+                rgb(var(--background-start-rgb));
+  }
+  .glass-card {
+    @apply bg-[var(--card-background)] border-[1px] border-[var(--card-border)] shadow-[0_8px_32px_0_rgba(31,38,135,0.37)];
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+  .glass-panel {
+    background: rgba(11, 17, 33, 0.75);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  }
+  .text-gradient-cyan-blue {
+    @apply bg-gradient-to-r from-cyan-400 to-blue-500 text-transparent bg-clip-text;
+  }
+  .glossy-button {
+    @apply relative overflow-hidden;
+    background-color: hsl(var(--primary));
+  }
+  .glossy-button::before {
+    content: '';
+    @apply absolute top-0 left-[-75%] w-[50%] h-full bg-gradient-to-r from-transparent via-white/30 to-transparent;
+    transform: skewX(-25deg);
+  }
+  .glossy-button:hover::before {
+    animation: shine 0.85s;
+  }
+  @keyframes shine {
+    100% {
+      left: 125%;
+    }
+  }
+}

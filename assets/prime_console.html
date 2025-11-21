@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CESAR.AI | Neuro-Symbolic Command Console</title>
+    
+    <!-- 1. Styles & Icons (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- 2. Custom Theme Configuration -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        midnight: '#020617',
+                        glass: 'rgba(15, 23, 42, 0.6)',
+                        neon: '#00f0ff',
+                        primary: '#3b82f6',
+                        accent: '#8b5cf6'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono:wght@400;700&display=swap');
+        
+        body {
+            background-color: #020617;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 40%),
+                radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 40%);
+            color: #e2e8f0;
+            overflow: hidden;
+        }
+
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(17, 24, 39, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        }
+
+        .glass-panel:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(17, 24, 39, 0.8);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        /* Canvas animations */
+        canvas { display: block; }
+        
+        .glow-text {
+            text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+        }
+    </style>
+</head>
+<body class="flex h-screen w-screen">
+
+    <!-- ==================================================================
+         SIDEBAR NAVIGATION
+    ================================================================== -->
+    <aside class="w-72 glass-panel border-r flex flex-col z-20">
+        <!-- Logo -->
+        <div class="h-20 flex items-center px-6 border-b border-white/5">
+            <div class="w-10 h-10 bg-gradient-to-br from-blue-600 to-violet-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/20 mr-3">
+                <i class="ph ph-brain text-2xl text-white"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-xl tracking-tight text-white">CESAR<span class="text-blue-400">.AI</span></h1>
+                <p class="text-[10px] text-slate-400 tracking-widest uppercase">Neuro-Symbolic OS</p>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto py-6 px-4 space-y-1" id="main-nav">
+            <!-- Links injected by JS -->
+        </nav>
+
+        <!-- User Status -->
+        <div class="p-4 border-t border-white/5">
+            <div class="glass-panel rounded-xl p-3 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-r from-slate-700 to-slate-600 flex items-center justify-center font-bold border border-white/10">AD</div>
+                <div>
+                    <div class="text-sm font-bold text-white">Admin User</div>
+                    <div class="text-[10px] text-emerald-400 flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> System Online
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- ==================================================================
+         MAIN CONTENT AREA
+    ================================================================== -->
+    <main class="flex-1 flex flex-col relative z-10">
+        
+        <!-- TOP HEADER -->
+        <header class="h-20 border-b border-white/5 flex items-center justify-between px-8 glass-panel bg-opacity-50">
+            <!-- Search -->
+            <div class="flex items-center gap-4 w-1/3">
+                <button class="p-2 text-slate-400 hover:text-white transition-colors"><i class="ph ph-list text-xl"></i></button>
+                <div class="relative w-full group">
+                    <i class="ph ph-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-400 transition-colors"></i>
+                    <input type="text" placeholder="Query the Cortex..." class="w-full bg-slate-900/50 border border-white/10 rounded-lg py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all">
+                </div>
+            </div>
+
+            <!-- Status Indicators -->
+            <div class="flex items-center gap-6">
+                <div class="flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full">
+                    <i class="ph ph-globe text-emerald-400"></i>
+                    <span class="text-xs font-mono text-emerald-300">US-EAST-1 • 12ms</span>
+                </div>
+                <div class="flex gap-4">
+                    <button class="relative text-slate-400 hover:text-white transition-colors">
+                        <i class="ph ph-bell text-xl"></i>
+                        <span class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                    </button>
+                    <button class="text-slate-400 hover:text-white transition-colors"><i class="ph ph-gear text-xl"></i></button>
+                </div>
+            </div>
+        </header>
+
+        <!-- DYNAMIC VIEWPORT -->
+        <div id="viewport" class="flex-1 overflow-hidden relative p-6">
+            <!-- Content injected via JS based on active tab -->
+        </div>
+
+    </main>
+
+    <!-- ==================================================================
+         JAVASCRIPT LOGIC (The Engine)
+    ================================================================== -->
+    <script>
+        // -- 1. NAVIGATION CONFIGURATION --
+        const MODULES = [
+            { id: 'overview', icon: 'squares-four', label: 'Command Center' },
+            { section: 'NEURAL ENGINES' },
+            { id: 'brain', icon: 'brain', label: 'Cortex Visualization', active: true },
+            { id: 'workflow', icon: 'lightning', label: 'Workflow Matrix' },
+            { section: 'INTELLIGENCE' },
+            { id: 'finance', icon: 'chart-line-up', label: 'Financial Engine' },
+            { id: 'talent', icon: 'users', label: 'Talent Constellation' },
+            { section: 'INFRASTRUCTURE' },
+            { id: 'data', icon: 'database', label: 'CockroachDB Sync' },
+        ];
+
+        let activeModule = 'brain';
+        
+        // -- 2. RENDERERS --
+
+        function renderNav() {
+            const nav = document.getElementById('main-nav');
+            nav.innerHTML = MODULES.map(m => {
+                if(m.section) return `<div class="px-3 pt-6 pb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">${m.section}</div>`;
+                const isActive = m.id === activeModule;
+                return `
+                    <button onclick="switchTab('${m.id}')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200 group ${isActive ? 'bg-blue-600/10 text-white border-l-2 border-blue-500' : 'text-slate-400 hover:text-white hover:bg-white/5'}">
+                        <i class="ph ph-${m.icon} text-lg ${isActive ? 'text-blue-400' : 'text-slate-500 group-hover:text-white'}"></i>
+                        <span class="text-sm font-medium">${m.label}</span>
+                        ${isActive ? '<div class="ml-auto w-1.5 h-1.5 rounded-full bg-blue-400 shadow-[0_0_8px_rgba(96,165,250,0.8)]"></div>' : ''}
+                    </button>
+                `;
+            }).join('');
+        }
+
+        function switchTab(id) {
+            activeModule = id;
+            renderNav();
+            renderViewport();
+        }
+
+        function renderViewport() {
+            const viewport = document.getElementById('viewport');
+            viewport.innerHTML = ''; // Clear previous
+
+            // Container
+            const container = document.createElement('div');
+            container.className = "w-full h-full relative rounded-2xl overflow-hidden glass-panel";
+            viewport.appendChild(container);
+
+            // Header Title
+            const titleBar = document.createElement('div');
+            titleBar.className = "absolute top-0 left-0 w-full p-6 z-20 flex justify-between items-start pointer-events-none";
+            titleBar.innerHTML = `
+                <div>
+                    <h2 class="text-2xl font-bold text-white tracking-tight glow-text uppercase">${MODULES.find(m=>m.id===activeModule).label}</h2>
+                    <p class="text-sm text-slate-400 font-mono mt-1">SYSTEM STATUS: <span class="text-emerald-400">OPERATIONAL</span></p>
+                </div>
+                <div class="flex gap-2 pointer-events-auto">
+                    <button class="p-2 bg-white/5 hover:bg-white/10 rounded border border-white/10 text-slate-300"><i class="ph ph-arrows-out"></i></button>
+                    <button class="p-2 bg-white/5 hover:bg-white/10 rounded border border-white/10 text-slate-300"><i class="ph ph-dots-three"></i></button>
+                </div>
+            `;
+            container.appendChild(titleBar);
+
+            // Injects the specific engine Canvas/HTML
+            if(activeModule === 'brain') initBrainEngine(container);
+            if(activeModule === 'workflow') initWorkflowEngine(container);
+            if(activeModule === 'finance') initFinanceEngine(container);
+            if(activeModule === 'talent') initTalentEngine(container);
+            if(activeModule === 'data') initDataConsole(container);
+            if(activeModule === 'overview') initOverview(container);
+        }
+
+        // -- 3. PHYSICS ENGINES (The "Secret Sauce") --
+
+        // --- A. THE BRAIN (Force Directed Graph) ---
+        function initBrainEngine(container) {
+            const canvas = document.createElement('canvas');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            // Nodes
+            const nodes = Array.from({length: 40}, (_, i) => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                vx: (Math.random() - 0.5) * 2,
+                vy: (Math.random() - 0.5) * 2,
+                radius: Math.random() * 5 + 2,
+                color: i % 4 === 0 ? '#3b82f6' : i % 3 === 0 ? '#10b981' : '#6366f1'
+            }));
+
+            function animate() {
+                if(activeModule !== 'brain') return;
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+
+                // Links
+                ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+                ctx.beginPath();
+                for(let i=0; i<nodes.length; i++) {
+                    for(let j=i+1; j<nodes.length; j++) {
+                        const dx = nodes[i].x - nodes[j].x;
+                        const dy = nodes[i].y - nodes[j].y;
+                        const dist = Math.sqrt(dx*dx + dy*dy);
+                        if(dist < 150) {
+                            ctx.moveTo(nodes[i].x, nodes[i].y);
+                            ctx.lineTo(nodes[j].x, nodes[j].y);
+                        }
+                    }
+                }
+                ctx.stroke();
+
+                // Nodes
+                nodes.forEach(node => {
+                    node.x += node.vx;
+                    node.y += node.vy;
+
+                    // Bounce
+                    if(node.x < 0 || node.x > canvas.width) node.vx *= -1;
+                    if(node.y < 0 || node.y > canvas.height) node.vy *= -1;
+
+                    ctx.beginPath();
+                    ctx.arc(node.x, node.y, node.radius, 0, Math.PI*2);
+                    ctx.fillStyle = node.color;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = node.color;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // --- B. WORKFLOW MATRIX (Particle Flow) ---
+        function initWorkflowEngine(container) {
+            const canvas = document.createElement('canvas');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            // Pipeline Nodes
+            const stations = [
+                {x: 100, y: 300, label: "Input"},
+                {x: 400, y: 300, label: "Processing"},
+                {x: 700, y: 200, label: "Human Review"},
+                {x: 700, y: 400, label: "AI Agent"},
+                {x: 1000, y: 300, label: "Output"}
+            ];
+
+            const particles = [];
+
+            function animate() {
+                if(activeModule !== 'workflow') return;
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+
+                // Spawn Particles
+                if(Math.random() > 0.9) {
+                    particles.push({
+                        x: 100, y: 300, 
+                        target: 1, 
+                        speed: 0.02, 
+                        progress: 0,
+                        color: Math.random() > 0.5 ? '#3b82f6' : '#10b981' // Blue (Human) or Green (AI)
+                    });
+                }
+
+                // Draw Stations
+                stations.forEach(s => {
+                    ctx.beginPath();
+                    ctx.arc(s.x, s.y, 20, 0, Math.PI*2);
+                    ctx.fillStyle = '#1e293b';
+                    ctx.strokeStyle = '#475569';
+                    ctx.lineWidth = 2;
+                    ctx.fill();
+                    ctx.stroke();
+                    ctx.fillStyle = '#94a3b8';
+                    ctx.font = "12px Inter";
+                    ctx.fillText(s.label, s.x - 20, s.y + 40);
+                });
+
+                // Draw & Move Particles
+                for(let i = particles.length - 1; i >= 0; i--) {
+                    const p = particles[i];
+                    const start = stations[p.target - 1];
+                    const end = stations[p.target];
+                    
+                    if(!end) { particles.splice(i, 1); continue; } // Finished
+
+                    p.progress += p.speed;
+                    p.x = start.x + (end.x - start.x) * p.progress;
+                    p.y = start.y + (end.y - start.y) * p.progress;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 4, 0, Math.PI*2);
+                    ctx.fillStyle = p.color;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = p.color;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+
+                    if(p.progress >= 1) {
+                        p.target++;
+                        p.progress = 0;
+                        // Branch Logic at station 2
+                        if(p.target === 2) {
+                            p.target = Math.random() > 0.5 ? 2 : 3; // Go to Human or AI
+                        } else if (p.target === 3 || p.target === 4) {
+                            p.target = 4; // Go to output
+                        }
+                    }
+                }
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // --- C. FINANCIAL ENGINE (Charts) ---
+        function initFinanceEngine(container) {
+            container.style.padding = "80px 40px";
+            container.style.display = "grid";
+            container.style.gridTemplateColumns = "2fr 1fr";
+            container.style.gap = "20px";
+
+            const chartDiv = document.createElement('div');
+            chartDiv.className = "glass-panel rounded-xl p-4 relative";
+            chartDiv.innerHTML = '<canvas id="revChart"></canvas>';
+            container.appendChild(chartDiv);
+
+            const statsDiv = document.createElement('div');
+            statsDiv.className = "glass-panel rounded-xl p-6 flex flex-col gap-4";
+            statsDiv.innerHTML = `
+                <div class="p-4 bg-emerald-500/10 rounded-lg border border-emerald-500/20">
+                    <div class="text-xs text-emerald-400 uppercase font-bold">Total Liquidity</div>
+                    <div class="text-3xl font-bold text-white">$1,240,500</div>
+                </div>
+                <div class="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div class="text-xs text-blue-400 uppercase font-bold">Runway</div>
+                    <div class="text-3xl font-bold text-white">18 Months</div>
+                </div>
+                <div class="p-4 bg-rose-500/10 rounded-lg border border-rose-500/20">
+                    <div class="text-xs text-rose-400 uppercase font-bold">Burn Rate</div>
+                    <div class="text-3xl font-bold text-white">$42,000/mo</div>
+                </div>
+            `;
+            container.appendChild(statsDiv);
+
+            // Initialize ChartJS
+            setTimeout(() => {
+                const ctx = document.getElementById('revChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [{
+                            label: 'Revenue',
+                            data: [12, 19, 15, 25, 32, 45],
+                            borderColor: '#00f0ff',
+                            backgroundColor: 'rgba(0, 240, 255, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { grid: { display: false } }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }, 100);
+        }
+
+        // --- D. DATA CONSOLE (Mock Terminal) ---
+        function initDataConsole(container) {
+            container.style.padding = "80px 40px";
+            container.innerHTML = `
+                <div class="w-full h-full bg-[#0d1117] rounded-xl border border-white/10 p-4 font-mono text-sm overflow-hidden flex flex-col">
+                    <div class="flex items-center gap-2 border-b border-white/10 pb-2 mb-2 text-slate-500">
+                        <i class="ph ph-terminal-window"></i> root@cesar-cortex:~
+                    </div>
+                    <div class="flex-1 overflow-y-auto text-slate-300 space-y-1" id="terminal-output">
+                        <div class="text-emerald-400">➜  ~ initializing uplink to CockroachDB...</div>
+                        <div>[10:42:01] Connection established (us-east-1)</div>
+                        <div>[10:42:02] Syncing 42 new nodes...</div>
+                        <div>[10:42:03] Vector embeddings updated.</div>
+                    </div>
+                    <div class="mt-2 flex items-center gap-2 text-white">
+                        <span class="text-emerald-400">➜</span> <span class="animate-pulse">_</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- E. TALENT MAP ---
+        function initTalentEngine(container) {
+            const canvas = document.createElement('canvas');
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            container.appendChild(canvas);
+            const ctx = canvas.getContext('2d');
+
+            const people = Array.from({length: 15}, (_, i) => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 20 + 10,
+                label: `Emp ${i}`
+            }));
+
+            function animate() {
+                if(activeModule !== 'talent') return;
+                ctx.fillStyle = '#020617';
+                ctx.fillRect(0,0,canvas.width, canvas.height);
+
+                people.forEach((p, i) => {
+                    // Subtle Float
+                    p.y += Math.sin(Date.now() * 0.001 + i) * 0.2;
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                    ctx.fillStyle = 'rgba(139, 92, 246, 0.5)'; // Purple
+                    ctx.fill();
+                    ctx.strokeStyle = '#fff';
+                    ctx.stroke();
+                    
+                    ctx.fillStyle = '#fff';
+                    ctx.font = "10px Inter";
+                    ctx.textAlign = "center";
+                    ctx.fillText(p.label, p.x, p.y + p.r + 15);
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // -- 4. INIT --
+        renderNav();
+        renderViewport();
+
+    </script>
+</body>
+</html>

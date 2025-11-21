@@ -1,0 +1,10 @@
+prefect==2.14.9
+psycopg2-binary==2.9.9
+openai==1.7.2
+requests==2.31.0
+beautifulsoup4==4.12.2
+lxml==5.1.0
+python-dotenv==1.0.0
+httpx==0.26.0
+numpy==1.26.3
+pgvector==0.2.4

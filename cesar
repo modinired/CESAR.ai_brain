@@ -1,0 +1,548 @@
+#!/bin/bash
+################################################################################
+# CESAR - Unified Ecosystem Command Launcher
+# PhD-Level Production-Grade Master Control Script
+################################################################################
+# Usage: cesar [command] [options]
+#
+# Commands:
+#   start       - Start all CESAR services (API, dashboard, ingestion, sync)
+#   stop        - Stop all CESAR services
+#   restart     - Restart all services
+#   status      - Show status of all services
+#   dashboard   - Launch dashboard only
+#   logs        - Tail all service logs
+#   health      - Check ecosystem health
+#   brain       - DataBrain utilities (stats, populate, test)
+#   test        - Run integration tests
+#   version     - Show version information
+################################################################################
+
+set -euo pipefail
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+PURPLE='\033[0;35m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+
+# Get script directory
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# Load environment
+if [ -f .env ]; then
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# PID directory
+PID_DIR="$SCRIPT_DIR/.pids"
+mkdir -p "$PID_DIR"
+
+# Log directory
+LOG_DIR="$SCRIPT_DIR/logs"
+mkdir -p "$LOG_DIR"
+
+################################################################################
+# Helper Functions
+################################################################################
+
+print_header() {
+    echo -e "${PURPLE}"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo "  ██████╗███████╗███████╗ █████╗ ██████╗     █████╗ ██╗"
+    echo " ██╔════╝██╔════╝██╔════╝██╔══██╗██╔══██╗   ██╔══██╗██║"
+    echo " ██║     █████╗  ███████╗███████║██████╔╝   ███████║██║"
+    echo " ██║     ██╔══╝  ╚════██║██╔══██║██╔══██╗   ██╔══██║██║"
+    echo " ╚██████╗███████╗███████║██║  ██║██║  ██║██╗██║  ██║██║"
+    echo "  ╚═════╝╚══════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═╝╚═╝"
+    echo "═══════════════════════════════════════════════════════════════"
+    echo -e "${NC}"
+    echo -e "${CYAN}Multi-Agent AI Ecosystem with Living DataBrain${NC}"
+    echo -e "${CYAN}Hybrid LLM: Qwen2.5 + Llama3 + GPT-4 + Gemini${NC}"
+    echo ""
+}
+
+log_info() {
+    echo -e "${GREEN}[INFO]${NC} $1"
+}
+
+log_warn() {
+    echo -e "${YELLOW}[WARN]${NC} $1"
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+log_success() {
+    echo -e "${GREEN}[✓]${NC} $1"
+}
+
+check_dependencies() {
+    local missing=0
+
+    if ! command -v python3 &> /dev/null; then
+        log_error "python3 not found"
+        missing=1
+    fi
+
+    if ! command -v psql &> /dev/null; then
+        log_warn "psql not found (optional but recommended)"
+    fi
+
+    if ! command -v ollama &> /dev/null; then
+        log_warn "ollama not found (local LLMs will be unavailable)"
+    fi
+
+    return $missing
+}
+
+compose_cmd() {
+    if command -v docker-compose >/dev/null 2>&1; then
+        echo "docker-compose"
+    elif command -v docker >/dev/null 2>&1; then
+        echo "docker compose"
+    else
+        echo ""
+    fi
+}
+
+start_database() {
+    local compose_file="$SCRIPT_DIR/docker-compose.yml"
+    local cmd
+    cmd=$(compose_cmd)
+
+    if [ -z "$cmd" ] || [ ! -f "$compose_file" ]; then
+        log_warn "Docker compose not available; skipping automatic database start"
+        return
+    fi
+
+    if ! grep -qi "cockroach" "$compose_file"; then
+        log_warn "docker-compose.yml found but no Cockroach service detected; skipping DB auto-start"
+        return
+    fi
+
+    if docker ps --format '{{.Names}}' | grep -qi "cockroach"; then
+        log_success "CockroachDB container already running"
+        return
+    fi
+
+    log_info "Starting CockroachDB via docker compose..."
+    if $cmd -f "$compose_file" up -d; then
+        log_success "CockroachDB started"
+    else
+        log_warn "Failed to start CockroachDB via docker compose"
+    fi
+}
+
+check_service() {
+    local service_name=$1
+    local pid_file="$PID_DIR/$service_name.pid"
+
+    if [ -f "$pid_file" ]; then
+        local pid=$(cat "$pid_file")
+        if ps -p $pid > /dev/null 2>&1; then
+            echo -e "${GREEN}●${NC} $service_name (PID: $pid)"
+            return 0
+        else
+            echo -e "${RED}●${NC} $service_name (stale PID file)"
+            rm -f "$pid_file"
+            return 1
+        fi
+    else
+        echo -e "${RED}●${NC} $service_name (not running)"
+        return 1
+    fi
+}
+
+start_service() {
+    local service_name=$1
+    local command=$2
+    local pid_file="$PID_DIR/$service_name.pid"
+    local log_file="$LOG_DIR/$service_name.log"
+
+    # Check if already running
+    if [ -f "$pid_file" ]; then
+        local pid=$(cat "$pid_file")
+        if ps -p $pid > /dev/null 2>&1; then
+            log_warn "$service_name already running (PID: $pid)"
+            return 0
+        else
+            rm -f "$pid_file"
+        fi
+    fi
+
+    log_info "Starting $service_name..."
+
+    # Start service in background
+    nohup bash -c "$command" > "$log_file" 2>&1 &
+    local pid=$!
+    echo $pid > "$pid_file"
+
+    # Wait a moment and check if it's still running
+    sleep 2
+    if ps -p $pid > /dev/null 2>&1; then
+        log_success "$service_name started (PID: $pid)"
+        return 0
+    else
+        log_error "$service_name failed to start (check $log_file)"
+        rm -f "$pid_file"
+        return 1
+    fi
+}
+
+stop_service() {
+    local service_name=$1
+    local pid_file="$PID_DIR/$service_name.pid"
+
+    if [ ! -f "$pid_file" ]; then
+        log_warn "$service_name not running"
+        return 0
+    fi
+
+    local pid=$(cat "$pid_file")
+
+    if ps -p $pid > /dev/null 2>&1; then
+        log_info "Stopping $service_name (PID: $pid)..."
+        kill $pid
+
+        # Wait for graceful shutdown
+        for i in {1..10}; do
+            if ! ps -p $pid > /dev/null 2>&1; then
+                log_success "$service_name stopped"
+                rm -f "$pid_file"
+                return 0
+            fi
+            sleep 1
+        done
+
+        # Force kill if still running
+        if ps -p $pid > /dev/null 2>&1; then
+            log_warn "Force killing $service_name..."
+            kill -9 $pid
+            sleep 1
+        fi
+    fi
+
+    rm -f "$pid_file"
+    log_success "$service_name stopped"
+    return 0
+}
+
+################################################################################
+# Command Implementations
+################################################################################
+
+cmd_start() {
+    print_header
+    log_info "Starting CESAR Ecosystem..."
+    echo ""
+
+    check_dependencies || exit 1
+
+    # 1. Start Ollama if not running
+    if command -v ollama &> /dev/null; then
+        if ! curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+            log_info "Starting Ollama..."
+            start_service "ollama" "ollama serve"
+            sleep 3
+        else
+            log_success "Ollama already running"
+        fi
+    fi
+
+    # 2. Start CockroachDB (docker compose) if available
+    start_database
+
+    # 3. Start API Server (binds 0.0.0.0 in api/main.py for Tailscale access)
+    start_service "api" "cd '$SCRIPT_DIR' && python3 api/main.py"
+
+    # 4. Start Hourly Data Ingestion
+    start_service "data_ingestion" "cd '$SCRIPT_DIR' && python3 services/hourly_data_ingestion.py"
+
+    # 5. Start Bidirectional Sync
+    if [ -f "$SCRIPT_DIR/run_cockroach_sync.sh" ]; then
+        start_service "cockroach_sync" "cd '$SCRIPT_DIR' && bash run_cockroach_sync.sh"
+    fi
+
+    # 6. Start Dashboard
+    start_service "dashboard" "cd '$SCRIPT_DIR' && python3 cesar_dashboard_enhanced.py"
+
+    # 7. Start Job Queue Worker (job_queue consumer)
+    start_service "job_queue_worker" "cd '$SCRIPT_DIR' && python3 services/job_queue_worker.py"
+
+    echo ""
+    log_success "CESAR Ecosystem started successfully!"
+    echo ""
+    echo -e "${CYAN}Services running:${NC}"
+    cmd_status
+    echo ""
+    echo -e "${CYAN}Dashboard:${NC} GUI launched (check your screen)"
+    echo -e "${CYAN}API:${NC}       http://localhost:8000"
+    echo -e "${CYAN}Logs:${NC}      $LOG_DIR"
+    echo ""
+}
+
+cmd_stop() {
+    print_header
+    log_info "Stopping CESAR Ecosystem..."
+    echo ""
+
+    stop_service "dashboard"
+    stop_service "cockroach_sync"
+    stop_service "data_ingestion"
+    stop_service "api"
+
+    # Optionally stop Ollama (commented out - usually want to keep running)
+    # stop_service "ollama"
+
+    echo ""
+    log_success "CESAR Ecosystem stopped"
+}
+
+cmd_restart() {
+    cmd_stop
+    sleep 2
+    cmd_start
+}
+
+cmd_status() {
+    check_service "ollama" || true
+    check_service "api" || true
+    check_service "data_ingestion" || true
+    check_service "cockroach_sync" || true
+    check_service "dashboard" || true
+}
+
+cmd_dashboard() {
+    print_header
+    log_info "Launching CESAR Dashboard..."
+
+    if check_service "dashboard" > /dev/null 2>&1; then
+        log_warn "Dashboard already running"
+        exit 0
+    fi
+
+    cd "$SCRIPT_DIR"
+    python3 cesar_dashboard_enhanced.py
+}
+
+cmd_logs() {
+    local service=${1:-all}
+
+    if [ "$service" == "all" ]; then
+        log_info "Tailing all logs (Ctrl+C to exit)..."
+        tail -f "$LOG_DIR"/*.log
+    else
+        if [ -f "$LOG_DIR/$service.log" ]; then
+            tail -f "$LOG_DIR/$service.log"
+        else
+            log_error "Log file not found: $service.log"
+            echo "Available logs:"
+            ls -1 "$LOG_DIR"/*.log 2>/dev/null || echo "  (none)"
+            exit 1
+        fi
+    fi
+}
+
+cmd_health() {
+    print_header
+    log_info "Checking CESAR Ecosystem Health..."
+    echo ""
+
+    # Check API
+    if curl -s http://localhost:8000/health > /dev/null 2>&1; then
+        log_success "API Server: Healthy"
+    else
+        log_error "API Server: Unreachable"
+    fi
+
+    # Check Ollama
+    if curl -s http://localhost:11434/api/tags > /dev/null 2>&1; then
+        log_success "Ollama: Running"
+        local models=$(curl -s http://localhost:11434/api/tags | python3 -c "import sys, json; data=json.load(sys.stdin); print(len(data.get('models', [])))")
+        echo "  └─ Models loaded: $models"
+    else
+        log_warn "Ollama: Not running"
+    fi
+
+    # Check CockroachDB
+    if [ -n "${COCKROACH_DB_URL:-}" ] && [[ ! "$COCKROACH_DB_URL" =~ pending ]]; then
+        if psql "$COCKROACH_DB_URL" -c "SELECT 1" > /dev/null 2>&1; then
+            log_success "CockroachDB: Connected"
+            local node_count=$(psql "$COCKROACH_DB_URL" -t -c "SELECT COUNT(*) FROM graph_nodes" 2>/dev/null || echo "0")
+            echo "  └─ DataBrain nodes: $node_count"
+        else
+            log_error "CockroachDB: Connection failed"
+        fi
+    else
+        log_warn "CockroachDB: Not configured"
+    fi
+
+    # Check services
+    echo ""
+    echo "Service Status:"
+    cmd_status
+
+    echo ""
+    log_info "Health check complete"
+}
+
+cmd_brain() {
+    local subcmd=${1:-stats}
+    shift || true
+
+    case "$subcmd" in
+        stats)
+            log_info "DataBrain Statistics..."
+            python3 -c "
+from services.brain_agent_integration import DataBrainAgent
+agent = DataBrainAgent('health_check')
+conn = agent._get_connection()
+cur = conn.cursor()
+cur.execute('SELECT COUNT(*) FROM graph_nodes')
+nodes = cur.fetchone()[0]
+cur.execute('SELECT COUNT(*) FROM graph_links')
+links = cur.fetchone()[0]
+print(f'Nodes: {nodes}')
+print(f'Links: {links}')
+cur.close()
+conn.close()
+"
+            ;;
+        populate)
+            log_info "Populating DataBrain..."
+            python3 populate_databrain_complete.py
+            ;;
+        test)
+            log_info "Testing DataBrain integration..."
+            python3 test_brain_integration.py
+            ;;
+        *)
+            log_error "Unknown brain command: $subcmd"
+            echo "Available: stats, populate, test"
+            exit 1
+            ;;
+    esac
+}
+
+cmd_test() {
+    print_header
+    log_info "Running CESAR Integration Tests..."
+    echo ""
+
+    # Test 1: DataBrain Integration
+    log_info "Test 1: DataBrain Integration"
+    python3 test_brain_integration.py || log_error "DataBrain tests failed"
+    echo ""
+
+    # Test 2: API Health
+    log_info "Test 2: API Health"
+    if curl -s http://localhost:8000/health | python3 -m json.tool > /dev/null 2>&1; then
+        log_success "API tests passed"
+    else
+        log_error "API tests failed"
+    fi
+    echo ""
+
+    # Test 3: Database Connectivity
+    log_info "Test 3: Database Connectivity"
+    if [ -n "${COCKROACH_DB_URL:-}" ]; then
+        if psql "$COCKROACH_DB_URL" -c "SELECT 1" > /dev/null 2>&1; then
+            log_success "Database tests passed"
+        else
+            log_error "Database tests failed"
+        fi
+    else
+        log_warn "Database not configured, skipping"
+    fi
+
+    echo ""
+    log_info "Integration tests complete"
+}
+
+cmd_version() {
+    print_header
+    echo -e "${CYAN}Version Information:${NC}"
+    echo "  CESAR Ecosystem: 1.0.0"
+    echo "  DataBrain Nodes: $(psql "$COCKROACH_DB_URL" -t -c "SELECT COUNT(*) FROM graph_nodes" 2>/dev/null | xargs || echo 'N/A')"
+    echo "  Agents: 48"
+    echo "  MCP Systems: 11"
+    echo ""
+    echo -e "${CYAN}LLM Configuration:${NC}"
+    echo "  Local: Qwen2.5-Coder-7B, Llama3-8B"
+    echo "  Cloud: GPT-4-Turbo, Gemini-Pro"
+    echo "  Routing: Adaptive importance-based"
+    echo ""
+    echo -e "${CYAN}Python Version:${NC}"
+    python3 --version
+    echo ""
+    echo -e "${CYAN}Ollama Models:${NC}"
+    ollama list 2>/dev/null || echo "  Ollama not running"
+}
+
+cmd_help() {
+    print_header
+    echo -e "${CYAN}Usage:${NC} cesar [command] [options]"
+    echo ""
+    echo -e "${CYAN}Commands:${NC}"
+    echo "  start       - Start all CESAR services"
+    echo "  stop        - Stop all CESAR services"
+    echo "  restart     - Restart all services"
+    echo "  status      - Show status of all services"
+    echo "  dashboard   - Launch dashboard only"
+    echo "  logs [svc]  - Tail service logs (default: all)"
+    echo "  health      - Check ecosystem health"
+    echo "  brain       - DataBrain utilities:"
+    echo "      stats      - Show DataBrain statistics"
+    echo "      populate   - Populate knowledge graph"
+    echo "      test       - Test brain integration"
+    echo "  test        - Run integration tests"
+    echo "  version     - Show version information"
+    echo "  help        - Show this help message"
+    echo ""
+    echo -e "${CYAN}Examples:${NC}"
+    echo "  cesar start              # Start entire ecosystem"
+    echo "  cesar dashboard          # Launch dashboard only"
+    echo "  cesar logs api           # Tail API logs"
+    echo "  cesar brain populate     # Populate DataBrain"
+    echo "  cesar health             # Check system health"
+    echo ""
+    echo -e "${CYAN}Log Files:${NC} $LOG_DIR"
+    echo -e "${CYAN}PID Files:${NC} $PID_DIR"
+    echo ""
+}
+
+################################################################################
+# Main Entry Point
+################################################################################
+
+main() {
+    local command=${1:-help}
+    shift || true
+
+    case "$command" in
+        start)      cmd_start "$@" ;;
+        stop)       cmd_stop "$@" ;;
+        restart)    cmd_restart "$@" ;;
+        status)     cmd_status "$@" ;;
+        dashboard)  cmd_dashboard "$@" ;;
+        logs)       cmd_logs "$@" ;;
+        health)     cmd_health "$@" ;;
+        brain)      cmd_brain "$@" ;;
+        test)       cmd_test "$@" ;;
+        version)    cmd_version "$@" ;;
+        help|--help|-h) cmd_help "$@" ;;
+        *)
+            log_error "Unknown command: $command"
+            echo "Run 'cesar help' for usage information"
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
