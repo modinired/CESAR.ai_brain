@@ -636,6 +636,8 @@ class MetricCard(QFrame):
     def __init__(self, title: str, value: str, delta: str = None, color: str = "#2563EB"):
         super().__init__()
         self.setObjectName("metricCard")
+        self.setMinimumWidth(220)  # Ensure card is wide enough for numbers
+        self.setMinimumHeight(140)  # Consistent height
 
         layout = QVBoxLayout(self)
         layout.setSpacing(10)
@@ -757,15 +759,30 @@ class CESARDashboard(QMainWindow):
         layout = QHBoxLayout(header)
 
         # Title - HIGH CONTRAST
-        title = QLabel("🏛️  CESAR.ai Multi-Agent Dashboard")
+        # Title and subtitle in vertical layout
+        title_layout = QVBoxLayout()
+        title_layout.setSpacing(2)
+
+        title = QLabel("🏛️  Atlas Capital Automations")
         title.setStyleSheet("""
             color: #3B82F6;
             font-size: 36px;
             font-weight: 800;
             letter-spacing: -0.5px;
         """)
-        layout.addWidget(title)
+        title_layout.addWidget(title)
 
+        subtitle = QLabel("a Terry Dellmonaco Co.")
+        subtitle.setStyleSheet("""
+            color: #6B7280;
+            font-size: 14px;
+            font-weight: 600;
+            font-style: italic;
+            margin-left: 45px;
+        """)
+        title_layout.addWidget(subtitle)
+
+        layout.addLayout(title_layout)
         layout.addStretch()
 
         # Status - HIGH VISIBILITY
