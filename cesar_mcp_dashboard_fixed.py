@@ -68,6 +68,8 @@ QFrame#metricCard {
     border: 1px solid rgba(255, 255, 255, 0.5);
     border-radius: 12px;
     padding: 20px;
+    min-width: 220px;
+    min-height: 140px;
 }
 
 /* Tab Widget - HIGH CONTRAST */
@@ -759,30 +761,15 @@ class CESARDashboard(QMainWindow):
         layout = QHBoxLayout(header)
 
         # Title - HIGH CONTRAST
-        # Title and subtitle in vertical layout
-        title_layout = QVBoxLayout()
-        title_layout.setSpacing(2)
-
-        title = QLabel("🏛️  Atlas Capital Automations")
+        # Title - HIGH CONTRAST
+        title = QLabel("🏛️  Atlas Capital Automations - a Terry Dellmonaco Co.")
         title.setStyleSheet("""
             color: #3B82F6;
-            font-size: 36px;
+            font-size: 32px;
             font-weight: 800;
             letter-spacing: -0.5px;
         """)
-        title_layout.addWidget(title)
-
-        subtitle = QLabel("a Terry Dellmonaco Co.")
-        subtitle.setStyleSheet("""
-            color: #6B7280;
-            font-size: 14px;
-            font-weight: 600;
-            font-style: italic;
-            margin-left: 45px;
-        """)
-        title_layout.addWidget(subtitle)
-
-        layout.addLayout(title_layout)
+        layout.addWidget(title)
         layout.addStretch()
 
         # Status - HIGH VISIBILITY
