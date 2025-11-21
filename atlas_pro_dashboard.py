@@ -1402,6 +1402,199 @@ class AtlasProfessionalDashboard(QMainWindow):
 
         layout.addWidget(tabs)
 
+        # Compact AI Chat Bar at bottom
+        chat_bar = self._create_chat_bar()
+        layout.addWidget(chat_bar)
+
+    def _create_chat_bar(self) -> QWidget:
+        """Create compact AI chat bar at bottom"""
+        chat_frame = QFrame()
+        chat_frame.setFixedHeight(60)
+        chat_frame.setStyleSheet("""
+            QFrame {
+                background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+                    stop:0 rgba(30, 41, 59, 0.95),
+                    stop:1 rgba(15, 23, 42, 0.95));
+                border-top: 2px solid rgba(59, 130, 246, 0.3);
+            }
+        """)
+
+        layout = QHBoxLayout(chat_frame)
+        layout.setContentsMargins(15, 8, 15, 8)
+        layout.setSpacing(10)
+
+        # Agent selector
+        agent_label = QLabel("🤖")
+        agent_label.setStyleSheet("font-size: 18px; background: transparent;")
+        layout.addWidget(agent_label)
+
+        self.agent_selector = QComboBox()
+        self.agent_selector.addItems(["CESAR", "FinPsy", "Pydini", "Lex", "Inno", "Edu"])
+        self.agent_selector.setFixedWidth(100)
+        self.agent_selector.setStyleSheet("""
+            QComboBox {
+                background: rgba(51, 65, 85, 0.8);
+                border: 1px solid rgba(71, 85, 105, 0.5);
+                border-radius: 6px;
+                padding: 6px 10px;
+                color: #E2E8F0;
+                font-size: 12px;
+                font-weight: 600;
+            }
+            QComboBox::drop-down {
+                border: none;
+            }
+            QComboBox QAbstractItemView {
+                background: rgba(30, 41, 59, 0.95);
+                border: 1px solid rgba(71, 85, 105, 0.5);
+                selection-background-color: rgba(59, 130, 246, 0.3);
+                color: #E2E8F0;
+            }
+        """)
+        layout.addWidget(self.agent_selector)
+
+        # Attachment button
+        attach_btn = QPushButton("📎")
+        attach_btn.setFixedSize(40, 40)
+        attach_btn.setToolTip("Attach files")
+        attach_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(71, 85, 105, 0.5);
+                border: 1px solid rgba(100, 116, 139, 0.3);
+                border-radius: 6px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: rgba(100, 116, 139, 0.7);
+                border: 1px solid rgba(148, 163, 184, 0.5);
+            }
+        """)
+        attach_btn.clicked.connect(self._handle_attachment)
+        layout.addWidget(attach_btn)
+
+        # Text input
+        self.chat_input = QLineEdit()
+        self.chat_input.setPlaceholderText("Ask CESAR anything... (Press Enter to send)")
+        self.chat_input.setStyleSheet("""
+            QLineEdit {
+                background: rgba(51, 65, 85, 0.8);
+                border: 1px solid rgba(71, 85, 105, 0.5);
+                border-radius: 8px;
+                padding: 10px 15px;
+                color: #E2E8F0;
+                font-size: 13px;
+            }
+            QLineEdit:focus {
+                border: 1px solid rgba(59, 130, 246, 0.6);
+                background: rgba(51, 65, 85, 1.0);
+            }
+        """)
+        self.chat_input.returnPressed.connect(self._send_message)
+        layout.addWidget(self.chat_input, 1)  # Takes up remaining space
+
+        # Microphone button
+        mic_btn = QPushButton("🎤")
+        mic_btn.setFixedSize(40, 40)
+        mic_btn.setToolTip("Voice input")
+        mic_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(71, 85, 105, 0.5);
+                border: 1px solid rgba(100, 116, 139, 0.3);
+                border-radius: 6px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: rgba(239, 68, 68, 0.3);
+                border: 1px solid rgba(239, 68, 68, 0.5);
+            }
+        """)
+        mic_btn.clicked.connect(self._handle_voice)
+        layout.addWidget(mic_btn)
+
+        # Screen share button
+        share_btn = QPushButton("🖥️")
+        share_btn.setFixedSize(40, 40)
+        share_btn.setToolTip("Screen share")
+        share_btn.setStyleSheet("""
+            QPushButton {
+                background: rgba(71, 85, 105, 0.5);
+                border: 1px solid rgba(100, 116, 139, 0.3);
+                border-radius: 6px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: rgba(139, 92, 246, 0.3);
+                border: 1px solid rgba(139, 92, 246, 0.5);
+            }
+        """)
+        share_btn.clicked.connect(self._handle_screen_share)
+        layout.addWidget(share_btn)
+
+        # Send button
+        send_btn = QPushButton("📤")
+        send_btn.setFixedSize(40, 40)
+        send_btn.setToolTip("Send message")
+        send_btn.setStyleSheet("""
+            QPushButton {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(59, 130, 246, 0.9),
+                    stop:1 rgba(37, 99, 235, 0.9));
+                border: 1px solid rgba(59, 130, 246, 0.3);
+                border-radius: 6px;
+                font-size: 16px;
+            }
+            QPushButton:hover {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(96, 165, 250, 1.0),
+                    stop:1 rgba(59, 130, 246, 1.0));
+            }
+        """)
+        send_btn.clicked.connect(self._send_message)
+        layout.addWidget(send_btn)
+
+        return chat_frame
+
+    def _send_message(self):
+        """Send message to selected agent"""
+        message = self.chat_input.text().strip()
+        if not message:
+            return
+
+        agent = self.agent_selector.currentText()
+
+        # Show notification
+        self.statusBar().showMessage(f"💬 Sending to {agent}: {message[:50]}...", 3000)
+
+        # Clear input
+        self.chat_input.clear()
+
+        # TODO: Integrate with actual agent API
+        # For now, just show confirmation
+        print(f"[{agent}] Message: {message}")
+
+    def _handle_attachment(self):
+        """Handle file attachment"""
+        from PyQt6.QtWidgets import QFileDialog
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select File to Attach",
+            "",
+            "All Files (*.*)"
+        )
+        if file_path:
+            self.statusBar().showMessage(f"📎 Attached: {file_path}", 3000)
+            print(f"Attached: {file_path}")
+
+    def _handle_voice(self):
+        """Handle voice input"""
+        self.statusBar().showMessage("🎤 Voice input feature coming soon!", 2000)
+        print("Voice input triggered")
+
+    def _handle_screen_share(self):
+        """Handle screen share"""
+        self.statusBar().showMessage("🖥️ Screen share feature coming soon!", 2000)
+        print("Screen share triggered")
+
     def _create_header(self) -> QWidget:
         """Create professional header"""
         header = QFrame()
