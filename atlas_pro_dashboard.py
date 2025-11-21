@@ -330,9 +330,10 @@ class AtlasDataManager:
         try:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT source_id, target_id, weight, edge_type
-                    FROM graph_edges
-                    ORDER BY weight DESC
+                    SELECT source_node_id as source_id, target_node_id as target_id,
+                           CAST(strength AS FLOAT) as weight, link_type as edge_type
+                    FROM graph_links
+                    ORDER BY strength DESC
                     LIMIT 300
                 """)
                 return [dict(row) for row in cur.fetchall()]
@@ -351,8 +352,12 @@ class AtlasDataManager:
         try:
             with conn.cursor() as cur:
                 cur.execute("""
-                    SELECT id, name, status, progress, created_at, updated_at,
-                           description, agent_id, steps_completed, total_steps
+                    SELECT id, workflow_name as name, status,
+                           progress_percent/100.0 as progress, created_at,
+                           started_at as updated_at, description,
+                           assigned_agent as agent_id,
+                           COALESCE(progress_percent/10, 0) as steps_completed,
+                           10 as total_steps
                     FROM workflows
                     ORDER BY created_at DESC
                     LIMIT 100
@@ -614,11 +619,11 @@ class DataBrain3DCanvas(FigureCanvasQTAgg):
             tgt = node_lookup.get(edge.get('target_id'))
 
             if src and tgt:
-                x_line = [src['x_coord'], tgt['x_coord']]
-                y_line = [src['y_coord'], tgt['y_coord']]
-                z_line = [src['z_index'], tgt['z_index']]
+                x_line = [float(src['x_coord']), float(tgt['x_coord'])]
+                y_line = [float(src['y_coord']), float(tgt['y_coord'])]
+                z_line = [float(src['z_index']), float(tgt['z_index'])]
 
-                weight = edge.get('weight', 0.5)
+                weight = float(edge.get('weight', 0.5))
                 alpha = min(weight, 0.4)
                 linewidth = weight * 2
 
