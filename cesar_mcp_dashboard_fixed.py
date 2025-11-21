@@ -153,8 +153,8 @@ QHeaderView::section {
 
 /* Chat Display - DARK MODE with SCROLLING */
 QTextEdit#chatDisplay {
-    background: #374151;
-    border: 1px solid #4B5563;
+    background: #F9FAFB;
+    border: 1px solid #D1D5DB;
     border-radius: 8px;
     padding: 20px;
     color: #FFFFFF;
@@ -652,7 +652,7 @@ class MetricCard(QFrame):
         """)
         layout.addWidget(title_label)
 
-        # Value - BOLD, NO SHADOW
+        # Value - BOLD, NO SHADOW, WITH MINIMUM WIDTH
         value_label = QLabel(value)
         value_label.setStyleSheet(f"""
             color: {color};
@@ -660,6 +660,8 @@ class MetricCard(QFrame):
             font-weight: 800;
             line-height: 1.2;
         """)
+        value_label.setMinimumWidth(150)
+        value_label.setWordWrap(False)
         layout.addWidget(value_label)
 
         # Delta - HIGH CONTRAST
@@ -695,7 +697,7 @@ class CESARDashboard(QMainWindow):
 
     def init_ui(self):
         """Initialize UI with high-contrast accessible design"""
-        self.setWindowTitle("CESAR.ai Multi-Agent MCP Dashboard - Atlas Capital Automations")
+        self.setWindowTitle("Atlas Capital Automations - a Terry Dellmonaco Co.")
         self.setGeometry(100, 50, 1800, 1000)
         self.setStyleSheet(DASHBOARD_STYLE)
 
@@ -1045,7 +1047,7 @@ class CESARDashboard(QMainWindow):
         main_layout.addWidget(chat_section)
 
         # Welcome message
-        self.chat_display.append("<b style='color: #60A5FA; font-size: 15px;'>CESAR:</b> <span style='color: #E5E7EB; font-size: 15px;'>Ey, yo! CESAR's ready, Bobby-boy. What can this agent do for you?</span><br>")
+        self.chat_display.append("<b style='color: #60A5FA; font-size: 15px;'>CESAR:</b> <span style='color: #1F2937; font-size: 15px; font-weight: 600;'>Ey, yo! CESAR's ready, Bobby-boy. What can this agent do for you?</span><br>")
 
         scroll.setWidget(widget)
         return scroll
@@ -1059,7 +1061,7 @@ class CESARDashboard(QMainWindow):
         agent = self.agent_combo.currentText().lower().replace(" ", "_")
 
         # Display user message
-        self.chat_display.append(f"<b style='color: #34D399; font-size: 15px;'>You:</b> <span style='color: #F3F4F6; font-size: 15px;'>{message}</span><br>")
+        self.chat_display.append(f"<b style='color: #34D399; font-size: 15px;'>You:</b> <span style='color: #1F2937; font-size: 15px; font-weight: 600;'>{message}</span><br>")
         self.chat_input.clear()
 
         # Show thinking
@@ -1081,7 +1083,7 @@ class CESARDashboard(QMainWindow):
 
         # Add response
         agent_name = self.agent_combo.currentText()
-        self.chat_display.append(f"<b style='color: #60A5FA; font-size: 15px;'>{agent_name}:</b> <span style='color: #E5E7EB; font-size: 15px;'>{response}</span><br><br>")
+        self.chat_display.append(f"<b style='color: #60A5FA; font-size: 15px;'>{agent_name}:</b> <span style='color: #1F2937; font-size: 15px; font-weight: 600;'>{response}</span><br><br>")
 
         # Scroll to bottom
         self.chat_display.moveCursor(QTextCursor.MoveOperation.End)
