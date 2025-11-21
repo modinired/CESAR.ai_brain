@@ -7,12 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { UploadCloud, RefreshCw } from 'lucide-react';
+import { useEffect } from 'react';
 
 type VisionJob = {
   job_id: string;
   status: string;
   result?: Record<string, any>;
   error?: string | null;
+  created_at?: string;
 };
 
 export default function OpticPage() {
@@ -22,8 +24,24 @@ export default function OpticPage() {
   );
   const [file, setFile] = useState<File | null>(null);
   const [job, setJob] = useState<VisionJob | null>(null);
+  const [jobs, setJobs] = useState<VisionJob[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const loadJobs = async () => {
+    try {
+      const res = await fetch(`${apiBase}/atlas/senses/optic/jobs`);
+      if (!res.ok) return;
+      const data = await res.json();
+      setJobs(data);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  useEffect(() => {
+    void loadJobs();
+  }, [apiBase]);
 
   const upload = async () => {
     if (!file) return;
@@ -82,11 +100,11 @@ export default function OpticPage() {
           </CardContent>
         </Card>
 
-        {job && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                Job {job.job_id}
+          {job && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  Job {job.job_id}
                 <Badge variant="secondary" className="capitalize">
                   {job.status}
                 </Badge>
@@ -103,8 +121,31 @@ export default function OpticPage() {
               )}
               {job.error && <div className="text-sm text-red-400">{job.error}</div>}
             </CardContent>
-          </Card>
-        )}
+            </Card>
+          )}
+
+          {jobs.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Jobs</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {jobs.map((j) => (
+                  <div key={j.job_id} className="p-2 rounded border border-white/10 text-sm flex justify-between">
+                    <div>
+                      <div className="font-mono text-xs">{j.job_id}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {j.created_at ? new Date(j.created_at).toLocaleString() : ''}
+                      </div>
+                    </div>
+                    <Badge variant="secondary" className="capitalize">
+                      {j.status}
+                    </Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
       </div>
     </AppLayout>
   );

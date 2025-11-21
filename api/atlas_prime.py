@@ -722,6 +722,37 @@ async def get_workflow_matrix(workflow_id: str, db: AsyncSession = Depends(get_d
     }
 
 
+@router.get("/automation/matrix/{workflow_id}/events")
+async def list_workflow_events(workflow_id: str, limit: int = 25, db: AsyncSession = Depends(get_db)):
+    res = await db.execute(
+        select(
+            WorkflowEvent.id,
+            WorkflowEvent.step,
+            WorkflowEvent.actor_type,
+            WorkflowEvent.actor_id,
+            WorkflowEvent.status,
+            WorkflowEvent.latency_ms,
+            WorkflowEvent.created_at,
+        )
+        .where(WorkflowEvent.workflow_id == workflow_id)
+        .order_by(WorkflowEvent.created_at.desc())
+        .limit(limit)
+    )
+    events = res.fetchall()
+    return [
+        {
+            "id": row.id,
+            "step": row.step,
+            "actor_type": row.actor_type,
+            "actor_id": row.actor_id,
+            "status": row.status,
+            "latency_ms": row.latency_ms,
+            "created_at": row.created_at,
+        }
+        for row in events
+    ]
+
+
 @router.post("/automation/matrix/swap")
 async def swap_actor(request: WorkflowSwapRequest, db: AsyncSession = Depends(get_db)):
     # Record swap as event and return patch guidance
@@ -737,6 +768,16 @@ async def swap_actor(request: WorkflowSwapRequest, db: AsyncSession = Depends(ge
     db.add(swap_event)
     await db.commit()
     return {"status": "ok", "workflow_id": request.workflow_id, "step": request.step, "new_actor_id": request.new_actor_id}
+
+
+@router.get("/automation/workflows")
+async def list_workflows(db: AsyncSession = Depends(get_db), limit: int = 20):
+    wf_res = await db.execute(select(WorkflowStep.workflow_id).distinct().limit(limit))
+    ids = [row[0] for row in wf_res.fetchall() if row[0]]
+    if not ids:
+        evt_res = await db.execute(select(WorkflowEvent.workflow_id).distinct().limit(limit))
+        ids = [row[0] for row in evt_res.fetchall() if row[0]]
+    return {"workflows": ids}
 
 
 # --- E. Optic Nerve (Vision Ingestion) --------------------------------------
@@ -830,6 +871,18 @@ async def get_vision_job(job_id: str, db: AsyncSession = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Job not found")
     return VisionJobResponse(job_id=job.id, status=job.status, result=job.result or {}, error=job.error)
+
+
+@router.get("/senses/optic/jobs")
+async def list_vision_jobs(limit: int = 20, db: AsyncSession = Depends(get_db)):
+    res = await db.execute(
+        select(VisionJob).order_by(VisionJob.created_at.desc()).limit(limit)
+    )
+    jobs = res.scalars().all()
+    return [
+        {"job_id": j.id, "status": j.status, "created_at": j.created_at, "result": j.result, "error": j.error}
+        for j in jobs
+    ]
 
 
 # --- F. Agent Self-Reflection & 1:1 -----------------------------------------

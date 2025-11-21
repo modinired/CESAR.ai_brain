@@ -6,6 +6,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge';
 import { GitBranch, PlusCircle, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
+import { Input } from '@/components/ui/input';
+import { Separator } from '@/components/ui/separator';
 
 type WorkflowStep = {
   id: string;
@@ -28,6 +30,18 @@ type WorkflowMatrix = {
   bottlenecks: Bottleneck[];
 };
 
+type WorkflowEvent = {
+  id: string;
+  step: string;
+  actor_type: string;
+  actor_id?: string | null;
+  status: string;
+  latency_ms?: number | null;
+  created_at: string;
+};
+
+const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+
 const statusIcons = {
   running: <Clock className="w-4 h-4 text-blue-500" />,
   completed: <CheckCircle2 className="w-4 h-4 text-green-500" />,
@@ -47,17 +61,27 @@ export default function WorkflowsPage() {
   );
   const [matrices, setMatrices] = useState<WorkflowMatrix[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [swapStep, setSwapStep] = useState<string>('');
+  const [swapActor, setSwapActor] = useState<string>('');
+  const [swapStatus, setSwapStatus] = useState<string | null>(null);
+  const [events, setEvents] = useState<Record<string, WorkflowEvent[]>>({});
 
   useEffect(() => {
     const load = async () => {
       try {
-        // Fetch a handful of workflow IDs; for demo, try known IDs seeded
-        const wfIds = ['wf_pipeline_opt', 'wf_finance_close', 'wf_incident_triage'];
+        const wfRes = await fetch(`${apiBase}/atlas/automation/workflows`);
+        const wfData = wfRes.ok ? await wfRes.json() : { workflows: [] };
+        const wfIds: string[] = wfData.workflows || [];
         const results: WorkflowMatrix[] = [];
         for (const id of wfIds) {
           const res = await fetch(`${apiBase}/atlas/automation/matrix/${id}`);
           if (!res.ok) continue;
           results.push(await res.json());
+          const evRes = await fetch(`${apiBase}/atlas/automation/matrix/${id}/events?limit=10`);
+          if (evRes.ok) {
+            const evts: WorkflowEvent[] = await evRes.json();
+            setEvents((prev) => ({ ...prev, [id]: evts }));
+          }
         }
         setMatrices(results);
       } catch (e: any) {
@@ -66,6 +90,34 @@ export default function WorkflowsPage() {
     };
     void load();
   }, [apiBase]);
+
+  const doSwap = async (workflow_id: string) => {
+    if (!swapStep || !swapActor) {
+      setSwapStatus('Step and new actor ID required');
+      return;
+    }
+    setSwapStatus(null);
+    try {
+      const res = await fetch(`${apiBase}/atlas/automation/matrix/swap`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(apiKey ? { 'X-API-Key': apiKey } : {}),
+        },
+        body: JSON.stringify({
+          workflow_id,
+          step: swapStep,
+          new_actor_id: swapActor,
+          new_actor_type: 'agent',
+        }),
+      });
+      if (!res.ok) throw new Error(`Swap failed (${res.status})`);
+      const data = await res.json();
+      setSwapStatus(`Swap recorded for ${data.step} -> ${data.new_actor_id}`);
+    } catch (e: any) {
+      setSwapStatus(e.message || 'Swap failed');
+    }
+  };
 
   return (
     <AppLayout>
@@ -117,6 +169,27 @@ export default function WorkflowsPage() {
                     )}
                   </div>
                 ))}
+                <Separator />
+                <div className="space-y-2">
+                  <div className="text-xs font-semibold text-muted-foreground">Recent events</div>
+                  {(events[matrix.workflow_id] || []).map((evt) => (
+                    <div key={evt.id} className="flex justify-between text-xs text-muted-foreground p-2 rounded bg-white/5">
+                      <div className="flex gap-2">
+                        <span className="font-semibold text-foreground">{evt.step}</span>
+                        <span className="uppercase">{evt.actor_type}</span>
+                        {evt.actor_id && <span>{evt.actor_id}</span>}
+                      </div>
+                      <div className="flex gap-3">
+                        <span className="capitalize">{evt.status}</span>
+                        {evt.latency_ms ? <span>{evt.latency_ms} ms</span> : null}
+                        <span>{new Date(evt.created_at).toLocaleString()}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {(events[matrix.workflow_id] || []).length === 0 && (
+                    <div className="text-xs text-muted-foreground">No recent events.</div>
+                  )}
+                </div>
                 {matrix.bottlenecks?.length > 0 && (
                   <div className="text-xs text-red-400">
                     Bottlenecks: {matrix.bottlenecks.map((b) => b.step_id).join(', ')}
@@ -129,13 +202,26 @@ export default function WorkflowsPage() {
                   <span>{matrix.workflow_id}</span>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">Events</Button>
-                  <Button variant="outline" size="sm">Swap</Button>
+                  <Button variant="ghost" size="sm" onClick={() => doSwap(matrix.workflow_id)}>Swap</Button>
                 </div>
               </CardFooter>
             </Card>
           ))}
         </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Swap Human → Agent</CardTitle>
+            <CardDescription>Record a swap for a step in the selected workflow.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Input placeholder="Step name" value={swapStep} onChange={(e) => setSwapStep(e.target.value)} />
+            <Input placeholder="New agent ID" value={swapActor} onChange={(e) => setSwapActor(e.target.value)} />
+            <Button onClick={() => doSwap(matrices[0]?.workflow_id || '')} disabled={!matrices.length}>
+              Execute Swap
+            </Button>
+          </CardContent>
+          {swapStatus && <div className="px-6 pb-4 text-sm text-muted-foreground">{swapStatus}</div>}
+        </Card>
       </div>
     </AppLayout>
   );
